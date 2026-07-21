@@ -726,6 +726,25 @@ function wrap(ctx, text, maxW){
   }
   return out;
 }
+/* วางข้อความกึ่งกลางโดยวัดความกว้างเอง แล้ววาดแบบชิดซ้าย
+   ไม่พึ่ง ctx.textAlign เพราะบาง WebView/เบราว์เซอร์บนมือถือไม่ทำตาม
+   ทำให้ข้อความถูกวาดจากจุดกึ่งกลางไปทางขวาจนตกขอบ */
+function fillCentered(ctx, text, centerX, y){
+  const w = ctx.measureText(text).width;
+  ctx.fillText(text, Math.round(centerX - w/2), y);
+}
+
+/* ย่อฟอนต์ลงจนกว่าข้อความจะพอดีความกว้างที่ให้ — กันปีหลุดขอบ */
+function fitFont(ctx, text, maxW, weight, startSize, minSize){
+  let s = startSize;
+  ctx.font = weight + ' ' + s + 'px ' + FONT;
+  while(ctx.measureText(text).width > maxW && s > minSize){
+    s -= 2;
+    ctx.font = weight + ' ' + s + 'px ' + FONT;
+  }
+  return s;
+}
+
 function drawPhoto(ctx, img, x, y, w, h, r){
   ctx.save();
   ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.clip();
@@ -796,11 +815,16 @@ async function makeImage(){
   }
 
   /* ---- หัววันที่ ---- */
-  ctx.textAlign = 'center'; ctx.fillStyle = '#2f2b26';
-  ctx.font = '700 ' + F_DATE + 'px ' + FONT;
-  ctx.fillText(thaiDate(curDate), W/2, 96);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#2f2b26';
+  const dateStr = thaiDate(curDate);
+  fitFont(ctx, dateStr, W - PAD*2 - 40, '700', F_DATE, 30);
+  fillCentered(ctx, dateStr, W/2, 96);
+
+  // เส้นขีดใต้ยาวตามข้อความ
+  const halfLine = Math.min(ctx.measureText(dateStr).width/2 + 12, (W - PAD*2)/2);
   ctx.strokeStyle = '#c9c2b2'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(W/2-170, 122); ctx.lineTo(W/2+170, 122); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W/2-halfLine, 122); ctx.lineTo(W/2+halfLine, 122); ctx.stroke();
 
   /* ---- แต่ละมื้อ ---- */
   let y = titleH;
@@ -831,13 +855,13 @@ async function makeImage(){
     let ty = innerY + 46;
 
     // ชื่อมื้อ
-    ctx.textAlign = 'center'; ctx.fillStyle = '#2f2b26';
-    ctx.font = '700 ' + F_MEAL + 'px ' + FONT;
-    ctx.fillText(b.m.emoji + '  ' + b.m.label, tx + colW/2, ty);
+    ctx.fillStyle = '#2f2b26';
+    const mealTitle = b.m.emoji + '  ' + b.m.label;
+    fitFont(ctx, mealTitle, colW, '700', F_MEAL, 26);
+    fillCentered(ctx, mealTitle, tx + colW/2, ty);
     ty += 52;
 
     // รายการ
-    ctx.textAlign = 'left';
     b.lines.forEach(l=>{
       if(l.note){ ctx.font = 'italic 400 ' + F_NOTE + 'px ' + FONT; ctx.fillStyle = '#8b8378'; }
       else { ctx.font = '400 ' + F_ITEM + 'px ' + FONT; ctx.fillStyle = '#3d382f'; }
