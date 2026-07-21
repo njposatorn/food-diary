@@ -34,7 +34,23 @@ header{
 .hdr{display:flex;align-items:center;gap:10px;padding:10px 0}
 .hdr h1{font-size:17px;margin:0;font-weight:700;flex:1}
 .datebar{display:flex;align-items:center;gap:8px;padding-bottom:10px}
-.datebar .today{font-weight:600;flex:1;text-align:center;font-size:15px}
+/* กล่องวันที่ = ปุ่มเลือกวันในตัว โดยเอา input date โปร่งใสวางทับ
+   วิธีนี้เปิดปฏิทินของเครื่องได้ทุกแพลตฟอร์ม และไม่ไปยุ่งกับ layout */
+.datepick{
+  position:relative;flex:1;min-width:0;
+  border:1px solid var(--line);background:var(--card);border-radius:12px;padding:7px 8px;
+}
+.datepick .today{
+  font-weight:600;text-align:center;font-size:15px;line-height:1.3;
+  overflow-wrap:break-word;
+}
+.datepick .today::before{content:"📅";font-size:12px;margin-right:5px;opacity:.7}
+.datepick input[type=date]{
+  position:absolute;inset:0;width:100%;height:100%;
+  opacity:0;border:none;margin:0;padding:0;background:transparent;
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+}
+@media (max-width:340px){ .datepick .today{font-size:14px} }
 .iconbtn{
   width:38px;height:38px;border-radius:12px;border:1px solid var(--line);
   background:var(--card);cursor:pointer;font-size:17px;display:flex;
@@ -174,11 +190,12 @@ nav button.on{color:var(--accent)}
       <h1>🍱 ไดอารี่อาหารรายวัน</h1>
     </div>
     <div class="datebar" id="datebar" style="display:flex">
-      <button class="iconbtn" id="prevDay">‹</button>
-      <div class="today" id="dateLabel">—</div>
-      <button class="iconbtn" id="pickDay">📅</button>
-      <button class="iconbtn" id="nextDay">›</button>
-      <input type="date" id="dateInput" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
+      <button class="iconbtn" id="prevDay" aria-label="วันก่อนหน้า">‹</button>
+      <div class="datepick">
+        <div class="today" id="dateLabel">—</div>
+        <input type="date" id="dateInput" aria-label="เลือกวันที่">
+      </div>
+      <button class="iconbtn" id="nextDay" aria-label="วันถัดไป">›</button>
     </div>
   </div>
 </header>
@@ -652,12 +669,11 @@ function shiftDay(n){
 }
 document.getElementById('prevDay').onclick = ()=>shiftDay(-1);
 document.getElementById('nextDay').onclick = ()=>shiftDay(1);
-document.getElementById('pickDay').onclick = ()=>{
-  const inp = document.getElementById('dateInput');
-  inp.value = curDate;
-  if(inp.showPicker) { try{ inp.showPicker(); return; }catch(e){} }
-  inp.style.position='static'; inp.style.opacity=1; inp.style.width='auto';
-  inp.style.height='auto'; inp.style.pointerEvents='auto'; inp.focus(); inp.click();
+/* input วันที่วางทับกล่องอยู่แล้ว แตะที่ไหนก็เปิดปฏิทินของเครื่องได้
+   บนเดสก์ท็อปช่วยเรียก showPicker() ให้ด้วย เพราะคลิกเฉยๆ อาจไม่เด้ง */
+document.getElementById('dateInput').onclick = function(){
+  this.value = curDate;
+  if(this.showPicker){ try{ this.showPicker(); }catch(e){} }
 };
 document.getElementById('dateInput').onchange = e=>{
   if(e.target.value){ curDate = e.target.value; renderLog(); }
